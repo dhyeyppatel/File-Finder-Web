@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [Released on 3rd-Dec-2026]
 
 ### Added
 - **Search History**: Displays last 5 search terms when focusing the empty search bar.
