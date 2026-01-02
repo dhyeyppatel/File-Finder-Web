@@ -5,8 +5,6 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- **Year-wise Grouping**: Search results are now visually separated by year (e.g., 2024, 2023).
-- **Advanced Search Syntax**: Support for filtering directly in search bar (e.g., `Spider Man year:2021 type:mkv`).
 - **Search History**: Displays last 5 search terms when focusing the empty search bar.
 - **Copy Link**: Button to quickly copy the Telegram file link to clipboard.
 - **Dynamic Stats**: Real-time total file count displayed in the search placeholder (e.g., "Search 500,000+ files...").
