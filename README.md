@@ -1,16 +1,27 @@
-```markdown
 # 📘 find.dhyey.space — Search API Documentation
 
 This document explains how to use the public Search API of **find.dhyey.space**, including all supported query parameters, usage examples, and how the Telegram file delivery API works.
 
 ---
 
+## ✨ Features
+
+- **Instant Search**: Results appear as you type with efficient debounce.
+- **Smart Suggestions**: Auto-complete and fuzzy matching for typos.
+- **Recent History**: Quickly access your last 5 searches.
+- **Dynamic Stats**: Search placeholder shows live total file count (e.g., "Search 500,000+ files").
+- **Keyboard Shortcuts**: Press `/` to focus the search bar instantly.
+- **Copy Link**: Quickly copy the Telegram deep link to your clipboard.
+- **Zero-State Tips**: Helpful suggestions when no results are found.
+- **Glassmorphism Design**: Sleek, semi-transparent panels with blur effects.
+- **Dynamic Themes**: Choose from Violet, Emerald, Amber, Rose, or Sky themes.
+
+---
+
 ## 🔍 Base Search Endpoint
 
 ```
-
-[https://find.dhyey.space/api/search](https://find.dhyey.space/api/search)
-
+https://find.dhyey.space/api/search
 ```
 
 This endpoint returns indexed files stored in MongoDB based on search filters.
@@ -22,9 +33,7 @@ This endpoint returns indexed files stored in MongoDB based on search filters.
 You pass search parameters like this:
 
 ```
-
-[https://find.dhyey.space/api/search?q=QUERY](https://find.dhyey.space/api/search?q=QUERY)
-
+https://find.dhyey.space/api/search?q=QUERY
 ```
 
 ### 🔹 If the search term contains spaces  
@@ -32,15 +41,13 @@ Use URL encoding:
 
 | Search Term | Encoded URL |
 |-------------|-------------|
-| Golmaal     | `Golmaal` |
-| 3 idiots    | `3%20idiots` OR `3+idiots` |
+| Deforestation     | `Deforestation` |
+| Cartesian Curve    | `Cartestian%20curve` OR `Cartestian+curve` |
 
 Example:
 
 ```
-
-[https://find.dhyey.space/api/search?q=3%20idiots](https://find.dhyey.space/api/search?q=3%20idiots)
-
+https://find.dhyey.space/api/search?q=cisc%20risc
 ```
 
 ---
@@ -58,19 +65,13 @@ Case-insensitive search on the configured `SEARCH_FIELD_NAME`.
 **Examples:**
 
 ```
-
-[https://find.dhyey.space/api/search?q=adobe](https://find.dhyey.space/api/search?q=adobe)
-
+https://find.dhyey.space/api/search?q=engineering
 ```
 
 With space:
 ```
-
-[https://find.dhyey.space/api/search?q=3%20idiots](https://find.dhyey.space/api/search?q=3%20idiots)
-
+https://find.dhyey.space/api/search?q=cisc%20risc
 ```
-
----
 
 ---
 
@@ -93,7 +94,9 @@ Example response:
     }
   ]
 }
-````
+```
+
+---
 
 # 🤖 File Delivery API
 
@@ -121,28 +124,47 @@ Opening that link in Telegram sends the file to the user.
 
 ---
 
-# 🗂 Internal Process Flow
+# � Internal Process Flow
 
 Below is the process of how files flow through your system:
 
-```
-User uploads file/media
-        ↓
-File stored in storage
-        ↓
-Metadata indexed in MongoDB
-        ↓
-Website (find.dhyey.space) lists indexed files
-        ↓
-User searches → /api/search executes
-        ↓
-Results displayed
-        ↓
-User selects file
-        ↓
-API /api/send_link/<file_id>
-        ↓
-Telegram bot sends file to user
+```mermaid
+graph TD
+    User[User Uploads File/Media] --> Storage[File stored in Storage]
+    Storage --> Index[Metadata Indexed in MongoDB]
+    Index --> Website[Website find.dhyey.space Lists Files]
+    Website --> Search[User Searches -> /api/search Executes]
+    Search --> Results[Results Displayed]
+    Results --> Select[User Selects File]
+    Select --> API[API /api/send_link/file_id]
+    API --> Bot[Telegram Bot Sends File to User]
 ```
 
 ---
+
+## 🛠️ Installation & Setup (For Developers)
+
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/dhyeyppatel/File-Finder-Web.git
+    cd File-Finder-Web
+    ```
+
+2.  **Install Dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **Configure Environment**:
+    Create a `.env` file:
+    ```env
+    MONGO_URI=mongodb+srv://...
+    DB_NAME=your_db
+    COLLECTION_NAME=your_collection
+    SEARCH_FIELD_NAME=file_name
+    ```
+
+4.  **Run the App**:
+    ```bash
+    python app.py
+    ```

@@ -32,26 +32,10 @@ const debounce = (fn, delay = 300) => {
 };
 
 // Syntax Parser: extracts year:2024 type:pdf from query
+// Syntax Parser Removed as per request (buggy)
 function parseSyntax(rawQuery) {
-  let q = rawQuery;
-  let year = currentYear; // inherited or default
-  let type = currentType;
-
-  // Extract year:YYYY
-  const yMatch = q.match(/year:(\d{4})/i);
-  if (yMatch) {
-    year = yMatch[1];
-    q = q.replace(yMatch[0], '');
-  }
-
-  // Extract type:ext
-  const tMatch = q.match(/type:([a-zA-Z0-9]+)/i);
-  if (tMatch) {
-    type = tMatch[1];
-    q = q.replace(tMatch[0], '');
-  }
-
-  return { q: q.trim(), year, type };
+  // simple pass-through now, logic removed.
+  return { q: rawQuery, year: currentYear, type: currentType };
 }
 
 // --- History Logic ---
@@ -254,7 +238,6 @@ function featuresHtml() {
     <h2>Features</h2>
     <ul style="line-height:1.6">
       <li><strong>Smart Search</strong>: Auto-suggestions, history, and fuzzy matching.</li>
-      <li><strong>Advanced Syntax</strong>: Type <code>year:2024</code> or <code>type:mkv</code> to filter.</li>
       <li><strong>Year-wise Results</strong>: Search results automatically grouped by year.</li>
       <li><strong>Modern UI</strong>: Glassmorphism, Dynamic Themes, and Dark Mode.</li>
       <li><strong>Shortcuts</strong>: Press <code>/</code> to focus search instantly.</li>
@@ -266,9 +249,10 @@ function howtoHtml() {
     <h2>How to use</h2>
     <ol style="line-height:1.6">
       <li><strong>Search</strong>: Type a movie or series name (e.g. "Spider Man").</li>
-      <li><strong>Filter</strong>: Use dropdowns or type <code>year:2023</code> directly.</li>
+      <li><strong>Filter</strong>: Use dropdowns (Year/Type) if enabled.</li>
       <li><strong>Get Link</strong>: Click <strong>Send</strong> to open in Telegram, or <strong>Copy</strong> to grab the link.</li>
       <li><strong>History</strong>: Click the empty search bar to see recent searches.</li>
+      <li><strong>Upload</strong>: Use the Sidebar > Upload option to contribute files.</li>
     </ol>`;
 }
 
@@ -309,27 +293,41 @@ function showHistorySuggestions() {
 
 async function showSuggestions(q) {
   try {
-    // direct matches first (small)
+    const term = q.trim().toLowerCase();
+
+    // 1. Fetch small batch of direct matches
     let res = await fetch(`/api/search?q=${encodeURIComponent(q)}&per_page=8`);
-    if (!res.ok) throw new Error('network');
-    let data = await res.json();
-    let items = data.items || [];
 
-    // fallback fuzzy from a larger pool
-    if (items.length < 5) {
-      const res2 = await fetch(`/api/search?per_page=200`);
-      if (res2.ok) {
-        const data2 = await res2.json();
-        const pool = data2.items || [];
-        const scored = pool.map(it => ({ it, d: levenshtein(q, (it.file_name || '')) }))
-          .sort((a, b) => a.d - b.d)
-          .slice(0, 12);
-        const maxAccept = Math.max(3, Math.floor(q.length * 0.6));
-        items = scored.filter(s => s.d <= maxAccept).map(s => s.it);
+    // 2. Fetch wider pool for smart fuzzy/substring matching if needed
+    if (res.ok) {
+      let data = await res.json();
+      let items = data.items || [];
+
+      if (items.length < 5) {
+        // get more items to perform client-side smart filtering
+        const res2 = await fetch(`/api/search?per_page=300`);
+        if (res2.ok) {
+          const data2 = await res2.json();
+          const pool = data2.items || [];
+
+          // Score items:
+          // - Contains substring? High score
+          // - Levenshtein distance? Low score
+          const scored = pool.map(it => {
+            const name = (it.file_name || "").toLowerCase();
+            if (name.includes(term)) return { it, score: 0 }; // best match
+            return { it, score: levenshtein(term, name) };
+          });
+
+          // Sort by score (lower is better)
+          scored.sort((a, b) => a.score - b.score);
+
+          // Take top matches (substrings will be at top, then close fuzzy matches)
+          items = scored.slice(0, 10).map(s => s.it);
+        }
       }
+      renderSuggestions(items.slice(0, 8));
     }
-
-    renderSuggestions(items.slice(0, 8));
   } catch (err) {
     console.error('suggest err', err);
     hideSuggestions();
@@ -426,7 +424,6 @@ async function loadNext() {
           <div style="font-size:48px; margin-bottom:12px">🍃</div>
           <h3>No results found</h3>
           <p>Try fewer keywords, or different spellings.</p>
-          ${currentQuery.includes(':') ? '<p style="font-size:12px; color:var(--primary)">Tip: Advanced syntax detected. Check if year/type exist.</p>' : ''}
         </div>
       `;
       finished = true;
