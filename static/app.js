@@ -248,7 +248,7 @@ function howtoHtml() {
   return `
     <h2>How to use</h2>
     <ol style="line-height:1.6">
-      <li><strong>Search</strong>: Type a movie or series name (e.g. "Spider Man").</li>
+      <li><strong>Search</strong>: Type a media or file/document name (e.g. "Deforestation").</li>
       <li><strong>Filter</strong>: Use dropdowns (Year/Type) if enabled.</li>
       <li><strong>Get Link</strong>: Click <strong>Send</strong> to open in Telegram, or <strong>Copy</strong> to grab the link.</li>
       <li><strong>History</strong>: Click the empty search bar to see recent searches.</li>
