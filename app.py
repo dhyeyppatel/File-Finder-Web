@@ -133,5 +133,15 @@ def api_send_link(file_id):
     link = f"https://t.me/dhyeyautofilterbot?start=file_1123135015_{file_id}"
     return jsonify({"link": link})
 
+@app.route('/api/stats', methods=['GET'])
+def api_stats():
+    """Returns total file count (fast estimation)."""
+    try:
+        count = collection.estimated_document_count()
+        return jsonify({"total_files": count})
+    except Exception as e:
+        print(f"/api/stats error: {e}")
+        return jsonify({"total_files": 0})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))

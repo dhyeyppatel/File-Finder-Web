@@ -1,231 +1,15 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>File Finder</title>
 
   <!-- INLINE CSS: replace missing/404 static issues -->
-  <style>
-    :root {
-      --bg: #f6f9fc;
-      --card: #ffffff;
-      --muted: #6b7280;
-      --accent: #0b74df;
-      --accent-hover: #095bb0;
-      --text: #0f172a;
-      --shadow: 0 8px 22px rgba(15,23,42,0.06);
-    }
-
-    /* base */
-    html,body { height:100%; }
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      transition: background .25s color .25s;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      overflow-x: hidden;
-    }
-
-    /* topbar */
-    .topbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: var(--card);
-      border-bottom: 1px solid rgba(14,42,71,0.04);
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 0;
-      z-index: 60;
-    }
-    .hamburger {
-      font-size: 20px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      padding:6px;
-    }
-    .brand { font-weight:700; font-size:18px; color:var(--text); }
-
-    .search-area {
-      display:flex;
-      flex:1;
-      max-width:800px;
-      gap:6px;
-      align-items:center;
-      position:relative;
-    }
-    .search-area input {
-      flex:1;
-      min-width:220px;
-      padding:10px 12px;
-      border: 1px solid #e6eef8;
-      border-radius:8px 0 0 8px;
-      font-size:15px;
-      outline: none;
-    }
-    .search-area button {
-      padding:10px 12px;
-      border-radius:0 8px 8px 0;
-      border:0;
-      background:var(--accent);
-      color:#fff;
-      cursor:pointer;
-      font-size:14px;
-    }
-    .search-area button:hover { background:var(--accent-hover); }
-
-    .suggestions {
-      position:absolute;
-      top:44px;
-      left:0;
-      right:0;
-      background:var(--card);
-      border:1px solid #e6eef8;
-      box-shadow: 0 10px 30px rgba(2,6,23,0.06);
-      z-index:80;
-      max-height:320px;
-      overflow:auto;
-      border-radius:8px;
-    }
-    .suggestion-item{ padding:10px 12px; cursor:pointer; }
-    .suggestion-item:hover{ background:#f1f9ff; }
-
-    /* theme toggle switch */
-    .theme-toggle { margin-left:8px; }
-    .switch { position:relative; width:44px; height:22px; display:inline-block; }
-    .switch input{ display:none;}
-    .slider { position:absolute; inset:0; background:#ccc; border-radius:22px; transition:.25s; }
-    .slider:before { content:""; position:absolute; left:3px; top:3px; width:16px; height:16px; background:white; border-radius:50%; transition:.25s; }
-    input:checked + .slider { background:var(--accent); }
-    input:checked + .slider:before { transform: translateX(22px); }
-
-    /* overlay that appears when sidebar opens */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.35);
-      z-index: 69;
-      display: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .overlay.visible { display:block; }
-
-    /* sidebar uses transform for robust mobile behaviour */
-    .sidebar {
-      position: fixed;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 280px;
-      max-width: 92%;
-      background: var(--card);
-      box-shadow: var(--shadow);
-      padding: 16px 56px 16px 16px; /* extra right padding to ensure content doesn't overlap close button */
-      transform: translateX(-110%);
-      transition: transform .28s ease;
-      z-index: 70;
-      will-change: transform;
-      touch-action: none;
-    }
-    .sidebar.open { transform: translateX(0); }
-    .sidebar h3 { margin-top:0; }
-    .sidebar button { margin-top:8px; display:block; }
-
-    /* changed: ensure close button is fixed within sidebar and visible */
-    .sidebar .sidebar-close {
-      position: absolute;
-      right: 12px;
-      top: 10px;
-      border: none;
-      background: transparent;
-      font-size: 24px;
-      cursor: pointer;
-      color: var(--muted);
-      padding: 6px;
-      z-index: 200; /* ensure it is above overlay/footer */
-    }
-
-    /* main layout - add bottom padding so fixed footer doesn't overlap content on small screens */
-    .main {
-      flex:1;
-      padding:18px;
-      margin-left: 0; /* content flows under fixed sidebar on mobile */
-      transition: margin-left .28s ease;
-      min-height: calc(100vh - 120px);
-      padding-bottom: 92px; /* reserve space for footer so it doesn't appear mid-list */
-    }
-
-    /* controls and cards */
-    .controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:12px; }
-    .controls label { color:var(--muted); font-size:14px; }
-    .controls select { padding:6px; border-radius:6px; border:1px solid #e8eef8; }
-
-    .cards { display:grid; gap:14px; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); }
-    .card {
-      background:var(--card);
-      border-radius:10px;
-      padding:14px;
-      box-shadow: var(--shadow);
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .card h4 { margin:0; font-size:16px; }
-    .card p { margin:0; color:var(--muted); font-size:13px; }
-    .meta { display:flex; justify-content:space-between; color:var(--muted); font-size:13px; }
-    .actions { margin-top:auto; }
-    .btn { padding:8px 10px; border-radius:8px; border:0; cursor:pointer; }
-    .btn-send { background:var(--accent); color:white; }
-    .btn-send:hover { background:var(--accent-hover); }
-
-    .loading, .end { text-align:center; padding:12px; color:var(--muted); display:none; }
-
-    /* footer: make it fixed at bottom so it never pushes into the content flow */
-    .site-footer {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding:14px;
-      text-align:center;
-      color:var(--muted);
-      background:var(--card);
-      border-top:1px solid rgba(14,42,71,0.03);
-      z-index: 50;
-    }
-
-    /* modal */
-    .modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.36); }
-    .modal.hidden{ display:none; }
-    .modal-content{ background:var(--card); padding:18px; border-radius:10px; max-width:720px; max-height:80vh; overflow:auto; position:relative; }
-
-    /* dark theme vars */
-    body.dark {
-      --bg:#071021;
-      --card:#0b1520;
-      --muted:#9aa9b8;
-      --accent:#06b6d4;
-      --accent-hover:#0891b2;
-      --text:#e6f0f6;
-    }
-
-    /* responsive */
-    @media (max-width:900px) {
-      .search-area { max-width: 100%; }
-      .cards { grid-template-columns: 1fr; }
-      .sidebar { width: 82%; }
-    }
-  </style>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
   <header class="topbar">
     <button id="openSidebarBtn" class="hamburger" aria-label="Open menu">☰</button>
@@ -237,7 +21,7 @@
       <div id="suggestions" class="suggestions" style="display:none"></div>
     </div>
 
-    <div class="theme-toggle">
+    <div class="theme-toggle-wrapper">
       <label class="switch">
         <input type="checkbox" id="darkToggle" aria-label="Toggle dark mode">
         <span class="slider"></span>
@@ -249,15 +33,45 @@
   <div id="overlay" class="overlay" aria-hidden="true"></div>
 
   <aside class="sidebar" id="sidebar" aria-hidden="true">
-    <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
-    <h3>Credits</h3>
-   <p>Developer: <strong><a href="https://gist.github.com/dhyeyppatel/024f3c59d671ba640297d5201abe6501">Dhyey Patel</a></strong></p>
-<p>Project: <a href="https://t.me/commonthread">Common Thread</a></p>
-<p>This will auto-close in 3 seconds...</p>
-<hr>
-    <button id="refreshBtn">Refresh</button>
-    <button id="featuresBtn">Features</button>
-    <button id="howtoBtn">How to use</button>
+    <div class="sidebar-header">
+      <div class="sidebar-title">Menu</div>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Actions</h3>
+      <button id="refreshBtn" class="sidebar-btn">
+        <i>↻</i> Refresh
+      </button>
+      <button id="featuresBtn" class="sidebar-btn">
+        <i>★</i> Features
+      </button>
+      <button id="howtoBtn" class="sidebar-btn">
+        <i>?</i> How to use
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Appearance</h3>
+      <div class="theme-picker">
+        <div class="theme-dot" style="background:#5e60ce" data-theme="default" title="Violet"></div>
+        <div class="theme-dot" style="background:#10b981" data-theme="emerald" title="Emerald"></div>
+        <div class="theme-dot" style="background:#f59e0b" data-theme="amber" title="Amber"></div>
+        <div class="theme-dot" style="background:#f43f5e" data-theme="rose" title="Rose"></div>
+        <div class="theme-dot" style="background:#0ea5e9" data-theme="sky" title="Sky"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:auto">
+      <h3>Info</h3>
+      <p style="font-size:13px; color:var(--text-muted); margin:0 0 4px 4px;">
+        Developer: <a href="https://gist.github.com/dhyeyppatel"
+          style="color:var(--primary); text-decoration:none; font-weight:600">Dhyey</a>
+      </p>
+      <p style="font-size:13px; color:var(--text-muted); margin:0 0 0 4px;">
+        <a href="https://t.me/commonthread" style="color:var(--text-muted)">Common Thread</a>
+      </p>
+    </div>
   </aside>
 
   <main class="main" id="mainContent">
@@ -314,4 +128,5 @@
     document.getElementById('sidebar').classList.remove('open');
   </script>
 </body>
+
 </html>

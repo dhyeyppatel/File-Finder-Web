@@ -31,13 +31,56 @@ const debounce = (fn, delay = 300) => {
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
 };
 
+// Syntax Parser: extracts year:2024 type:pdf from query
+function parseSyntax(rawQuery) {
+  let q = rawQuery;
+  let year = currentYear; // inherited or default
+  let type = currentType;
+
+  // Extract year:YYYY
+  const yMatch = q.match(/year:(\d{4})/i);
+  if (yMatch) {
+    year = yMatch[1];
+    q = q.replace(yMatch[0], '');
+  }
+
+  // Extract type:ext
+  const tMatch = q.match(/type:([a-zA-Z0-9]+)/i);
+  if (tMatch) {
+    type = tMatch[1];
+    q = q.replace(tMatch[0], '');
+  }
+
+  return { q: q.trim(), year, type };
+}
+
+// --- History Logic ---
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem('searchHistory') || '[]');
+  } catch { return []; }
+}
+function addToHistory(term) {
+  if (!term) return;
+  let hist = getHistory();
+  // Remove if exists (to move to top)
+  hist = hist.filter(h => h.toLowerCase() !== term.toLowerCase());
+  hist.unshift(term);
+  if (hist.length > 5) hist.pop(); // keep top 5
+  localStorage.setItem('searchHistory', JSON.stringify(hist));
+}
+
 function _parseParams() {
   const p = new URLSearchParams();
   p.set('page', page);
   p.set('per_page', per_page);
-  if (currentQuery) p.set('q', currentQuery);
-  if (currentYear) p.set('year', currentYear);
-  if (currentType) p.set('type', currentType);
+
+  // Apply advanced syntax parsing
+  const { q, year, type } = parseSyntax(currentQuery);
+
+  if (q) p.set('q', q);
+  if (year) p.set('year', year);
+  if (type) p.set('type', type);
   if (currentSort) p.set('sort', currentSort);
   return p;
 }
@@ -84,6 +127,10 @@ function levenshtein(a, b) {
 document.getElementById('searchBtn').addEventListener('click', doSearch);
 searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
 searchInput.addEventListener('input', debounce(onSearchInput, 220));
+// Show history on focus if empty
+searchInput.addEventListener('focus', () => {
+  if (!searchInput.value.trim()) showHistorySuggestions();
+});
 
 /* Keep the filter change handlers intact (logic still runs),
    but visually hide the .controls section so it doesn't show in the UI. */
@@ -202,20 +249,62 @@ if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) clos
 
 function openModal(html) { if (modal) { modal.classList.remove('hidden'); modalBody.innerHTML = html; } }
 function closeModal() { if (modal) { modal.classList.add('hidden'); modalBody.innerHTML = ""; } }
-function featuresHtml() { return `<h2>Features</h2><ul><li>Latest files feed (infinite scroll)</li><li>Search + suggestions</li><li>Dark/light mode</li></ul>`; }
-function howtoHtml() { return `<h2>How to use</h2><ol><li>Type in search — suggestions appear as you type.</li><li>Click a suggestion or press Enter to search.</li><li>Click Send to open Telegram deep link.</li></ol>`; }
+function featuresHtml() {
+  return `
+    <h2>Features</h2>
+    <ul style="line-height:1.6">
+      <li><strong>Smart Search</strong>: Auto-suggestions, history, and fuzzy matching.</li>
+      <li><strong>Advanced Syntax</strong>: Type <code>year:2024</code> or <code>type:mkv</code> to filter.</li>
+      <li><strong>Year-wise Results</strong>: Search results automatically grouped by year.</li>
+      <li><strong>Modern UI</strong>: Glassmorphism, Dynamic Themes, and Dark Mode.</li>
+      <li><strong>Shortcuts</strong>: Press <code>/</code> to focus search instantly.</li>
+    </ul>`;
+}
+
+function howtoHtml() {
+  return `
+    <h2>How to use</h2>
+    <ol style="line-height:1.6">
+      <li><strong>Search</strong>: Type a movie or series name (e.g. "Spider Man").</li>
+      <li><strong>Filter</strong>: Use dropdowns or type <code>year:2023</code> directly.</li>
+      <li><strong>Get Link</strong>: Click <strong>Send</strong> to open in Telegram, or <strong>Copy</strong> to grab the link.</li>
+      <li><strong>History</strong>: Click the empty search bar to see recent searches.</li>
+    </ol>`;
+}
 
 // --- suggestions logic ---
 async function onSearchInput(e) {
   const q = e.target.value.trim();
   if (!q) {
-    hideSuggestions();
+    // Show history if empty
+    showHistorySuggestions();
+
     // when user erases search, show home/latest
     currentQuery = "";
     resetAndLoad();
     return;
   }
   await showSuggestions(q);
+}
+
+function showHistorySuggestions() {
+  const hist = getHistory();
+  if (hist.length === 0) { hideSuggestions(); return; }
+
+  suggestionsEl.innerHTML = `<div style="padding:8px 12px; font-size:11px; color:var(--text-muted); font-weight:600; background:rgba(0,0,0,0.02)">RECENT SEARCHES</div>` +
+    hist.map(t => {
+      return `<div class="suggestion-item history-item">🕒 ${escapeHtml(t)}</div>`;
+    }).join('');
+  suggestionsEl.style.display = 'block';
+
+  Array.from(suggestionsEl.querySelectorAll('.suggestion-item.history-item')).forEach(el => {
+    el.addEventListener('click', () => {
+      const title = el.textContent.replace('🕒 ', '') || '';
+      searchInput.value = title;
+      hideSuggestions();
+      doSearch();
+    });
+  });
 }
 
 async function showSuggestions(q) {
@@ -233,8 +322,8 @@ async function showSuggestions(q) {
         const data2 = await res2.json();
         const pool = data2.items || [];
         const scored = pool.map(it => ({ it, d: levenshtein(q, (it.file_name || '')) }))
-                           .sort((a,b)=>a.d - b.d)
-                           .slice(0,12);
+          .sort((a, b) => a.d - b.d)
+          .slice(0, 12);
         const maxAccept = Math.max(3, Math.floor(q.length * 0.6));
         items = scored.filter(s => s.d <= maxAccept).map(s => s.it);
       }
@@ -278,10 +367,14 @@ document.addEventListener('click', (e) => {
 });
 
 // --- search & infinite scroll ---
+let lastRenderedYear = null; // Track year for grouping
+
 function doSearch() {
   currentQuery = searchInput.value.trim();
+  addToHistory(currentQuery); // SAVE HISTORY
   page = 1;
   finished = false;
+  lastRenderedYear = null; // Reset
   cardsEl.innerHTML = "";
   endEl.style.display = 'none';
   loadNext();
@@ -292,6 +385,7 @@ function doSearch() {
 function resetAndLoad() {
   page = 1;
   finished = false;
+  lastRenderedYear = null; // Reset
   cardsEl.innerHTML = "";
   endEl.style.display = 'none';
   loadNext();
@@ -327,7 +421,14 @@ async function loadNext() {
     const items = data.items || [];
 
     if (page === 1 && items.length === 0) {
-      cardsEl.innerHTML = `<p style="color: #9aa9b8">No results found.</p>`;
+      cardsEl.innerHTML = `
+        <div style="text-align:center; padding:40px; opacity:0.7;">
+          <div style="font-size:48px; margin-bottom:12px">🍃</div>
+          <h3>No results found</h3>
+          <p>Try fewer keywords, or different spellings.</p>
+          ${currentQuery.includes(':') ? '<p style="font-size:12px; color:var(--primary)">Tip: Advanced syntax detected. Check if year/type exist.</p>' : ''}
+        </div>
+      `;
       finished = true;
       endEl.style.display = 'block';
       return;
@@ -350,6 +451,17 @@ async function loadNext() {
 }
 
 function makeCard(item) {
+  // Year Divider Logic
+  // Only show divider if looking at SEARCH results (where we sort by year).
+  // In Home Feed, we sort by ID, so years are mixed (don't group there).
+  if (currentQuery && item.year && item.year !== lastRenderedYear) {
+    const divider = document.createElement('div');
+    divider.className = 'year-divider';
+    divider.textContent = item.year;
+    cardsEl.appendChild(divider);
+    lastRenderedYear = item.year;
+  }
+
   const card = document.createElement('div');
   card.className = 'card';
 
@@ -370,6 +482,7 @@ function makeCard(item) {
   const sendBtn = document.createElement('button');
   sendBtn.className = 'btn btn-send';
   sendBtn.textContent = 'Send';
+  sendBtn.style.flex = "2";
   sendBtn.addEventListener('click', () => {
     const telegramLink = `https://t.me/dhyeyautofilterbot?start=file_1123135015_${encodeURIComponent(item.id)}`;
     window.open(telegramLink, '_blank');
@@ -377,7 +490,22 @@ function makeCard(item) {
     closeSidebar();
   });
 
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'btn btn-outline';
+  copyBtn.textContent = 'Copy';
+  copyBtn.style.flex = "1";
+  copyBtn.addEventListener('click', async () => {
+    try {
+      const telegramLink = `https://t.me/dhyeyautofilterbot?start=file_1123135015_${encodeURIComponent(item.id)}`;
+      await navigator.clipboard.writeText(telegramLink);
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => copyBtn.textContent = originalText, 2000);
+    } catch (e) { console.error(e); }
+  });
+
   actions.appendChild(sendBtn);
+  actions.appendChild(copyBtn);
 
   card.appendChild(title);
   card.appendChild(caption);
@@ -401,3 +529,73 @@ if (darkToggle) darkToggle.addEventListener('change', () => applyDarkMode(darkTo
 // init from storage
 const stored = localStorage.getItem('darkMode');
 if (stored === '1') { if (darkToggle) darkToggle.checked = true; applyDarkMode(true); } else { if (darkToggle) darkToggle.checked = false; applyDarkMode(false); }
+
+// --- Dynamic Theme Logic ---
+const themeDots = document.querySelectorAll('.theme-dot');
+const savedTheme = localStorage.getItem('theme') || 'default';
+
+function setTheme(themeName) {
+  // Reset all dots
+  themeDots.forEach(dot => dot.classList.remove('active'));
+
+  // Activate current dot
+  const dotToActive = document.querySelector(`.theme-dot[data-theme="${themeName}"]`);
+  if (dotToActive) dotToActive.classList.add('active');
+
+  // Apply theme attribute to body
+  if (themeName === 'default') {
+    document.body.removeAttribute('data-theme');
+  } else {
+    document.body.setAttribute('data-theme', themeName);
+  }
+
+  // Save preference
+  localStorage.setItem('theme', themeName);
+}
+
+// Init theme
+setTheme(savedTheme);
+
+// Event listeners
+themeDots.forEach(dot => {
+  dot.addEventListener('click', () => {
+    const theme = dot.getAttribute('data-theme');
+    setTheme(theme);
+  });
+});
+
+// --- Phase 2: Dynamic Stats & Shortcuts ---
+
+// 1. Fetch stats and update placeholder
+async function updateStats() {
+  try {
+    const res = await fetch('/api/stats');
+    if (res.ok) {
+      const data = await res.json();
+      const count = data.total_files || 0;
+      if (count > 0) {
+        // Format: "Search among 250,300+ files..."
+        const formatted = new Intl.NumberFormat('en-IN').format(count);
+        if (searchInput) {
+          searchInput.placeholder = `Search among ${formatted}+ files...`;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Stats fetch failed', e);
+  }
+}
+updateStats();
+
+// 2. Keyboard Shortcut ('/')
+document.addEventListener('keydown', (e) => {
+  // If user presses '/' and is NOT already in an input/textarea
+  if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+    e.preventDefault();
+    if (searchInput) {
+      searchInput.focus();
+      // Optional: select all text if they want to replace previous query immediately
+      // searchInput.select();
+    }
+  }
+});
