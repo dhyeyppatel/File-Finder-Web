@@ -31,7 +31,7 @@ The system relies on a **MongoDB** index of the files, allowing for sub-millisec
 
 The application follows a **Client-Server** architecture with a document-oriented database.
 
-```mermaid
+```
 graph TD
     Client[Web Browser (Frontend)] <-->|HTTP/REST| Server[Flask API (Backend)]
     Server <-->|Query/Aggregation| DB[(MongoDB Atlas)]
@@ -220,3 +220,4 @@ Generates a deep link to the Telegram bot.
 ---
 
 *Documentation generated for File Finder Web.*
+
