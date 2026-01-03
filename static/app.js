@@ -238,7 +238,6 @@ function featuresHtml() {
     <h2>Features</h2>
     <ul style="line-height:1.6">
       <li><strong>Smart Search</strong>: Auto-suggestions, history, and fuzzy matching.</li>
-      <li><strong>Year-wise Results</strong>: Search results automatically grouped by year.</li>
       <li><strong>Modern UI</strong>: Glassmorphism, Dynamic Themes, and Dark Mode.</li>
       <li><strong>Shortcuts</strong>: Press <code>/</code> to focus search instantly.</li>
     </ul>`;
