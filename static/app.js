@@ -4,7 +4,8 @@
    - ensures close button visible and adds auto-close (8s) with interaction cancel
 */
 
-const API_BASE = ""; // same origin
+const API_BASE = window.USER_API_BASE || "/api";
+const BOT_USERNAME = window.BOT_USERNAME || "dhyeyautofilterbot";
 const cardsEl = document.getElementById('cards');
 const loadingEl = document.getElementById('loading');
 const endEl = document.getElementById('endOfList');
@@ -295,7 +296,7 @@ async function showSuggestions(q) {
     const term = q.trim().toLowerCase();
 
     // 1. Fetch small batch of direct matches
-    let res = await fetch(`/api/search?q=${encodeURIComponent(q)}&per_page=8`);
+    let res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}&per_page=8`);
 
     // 2. Fetch wider pool for smart fuzzy/substring matching if needed
     if (res.ok) {
@@ -304,7 +305,7 @@ async function showSuggestions(q) {
 
       if (items.length < 5) {
         // get more items to perform client-side smart filtering
-        const res2 = await fetch(`/api/search?per_page=300`);
+        const res2 = await fetch(`${API_BASE}/search?per_page=300`);
         if (res2.ok) {
           const data2 = await res2.json();
           const pool = data2.items || [];
@@ -411,7 +412,7 @@ async function loadNext() {
   try {
     const params = _parseParams();
     // always use /api/search so sorting/filters are respected by backend logic (even if UI hidden)
-    const url = `/api/search?${params.toString()}`;
+    const url = `${API_BASE}/search?${params.toString()}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('network');
     const data = await res.json();
@@ -480,7 +481,7 @@ function makeCard(item) {
   sendBtn.textContent = 'Send';
   sendBtn.style.flex = "2";
   sendBtn.addEventListener('click', () => {
-    const telegramLink = `https://t.me/dhyeyautofilterbot?start=file_1123135015_${encodeURIComponent(item.id)}`;
+    const telegramLink = `https://t.me/${BOT_USERNAME}?start=file_1123135015_${encodeURIComponent(item.id)}`;
     window.open(telegramLink, '_blank');
     // close sidebar on send to keep UX consistent
     closeSidebar();
@@ -492,7 +493,7 @@ function makeCard(item) {
   copyBtn.style.flex = "1";
   copyBtn.addEventListener('click', async () => {
     try {
-      const telegramLink = `https://t.me/dhyeyautofilterbot?start=file_1123135015_${encodeURIComponent(item.id)}`;
+      const telegramLink = `https://t.me/${BOT_USERNAME}?start=file_1123135015_${encodeURIComponent(item.id)}`;
       await navigator.clipboard.writeText(telegramLink);
       const originalText = copyBtn.textContent;
       copyBtn.textContent = "Copied!";
@@ -565,7 +566,7 @@ themeDots.forEach(dot => {
 // 1. Fetch stats and update placeholder
 async function updateStats() {
   try {
-    const res = await fetch('/api/stats');
+    const res = await fetch(`${API_BASE}/stats`);
     if (res.ok) {
       const data = await res.json();
       const count = data.total_files || 0;

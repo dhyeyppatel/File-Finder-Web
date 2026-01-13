@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>File Finder - Dashboard</title>
+    <!-- Google Fonts: Poppins for modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --input-bg: rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            /* For background shapes */
+            position: relative;
+        }
+
+        /* Abstract background shapes */
+        .shape {
+            position: absolute;
+            filter: blur(100px);
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        .shape-1 {
+            width: 400px;
+            height: 400px;
+            background: #8b5cf6;
+            top: -100px;
+            left: -100px;
+            border-radius: 50%;
+        }
+
+        .shape-2 {
+            width: 300px;
+            height: 300px;
+            background: #06b6d4;
+            bottom: -50px;
+            right: -50px;
+            border-radius: 50%;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: -20px;
+            margin-bottom: 30px;
+        }
+
+        .auth-box {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-muted);
+        }
+
+        .tab.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #e2e8f0;
+            margin-left: 2px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: var(--input-bg);
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, #6d28d9 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .alert-error {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        /* User Profile & Config Styles */
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 20px;
+        }
+
+        .welcome-text {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .username-highlight {
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: underline;
+        }
+
+        .logout-btn:hover {
+            color: #fff;
+        }
+
+        .public-link-btn {
+            display: block;
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .helper-text {
+            font-size: 11px;
+            margin-top: 4px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+
+    <div class="container">
+        <div class="brand">File Finder</div>
+        <div class="subtitle">Securely share your files on Telegram</div>
+
+        <div class="auth-box">
+            <!-- Loading State -->
+            <div id="loading" style="text-align:center; display:none; color: var(--text-muted);">
+                <svg style="width:24px; height:24px; animation:spin 1s linear infinite" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.3"></circle>
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+            </div>
+
+            <!-- Auth Section -->
+            <div id="authSection">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('login')">Login</div>
+                    <div class="tab" onclick="switchTab('register')">Register</div>
+                </div>
+
+                <form id="authForm" onsubmit="handleAuth(event)">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" name="username" placeholder="Enter your username" required
+                            pattern="[a-zA-Z0-9_]{3,20}" title="3-20 chars, alphanumeric only">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" placeholder="••••••••" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn-primary" id="authBtn">Login</button>
+                </form>
+            </div>
+
+            <!-- Config Section -->
+            <div id="configSection" class="hidden">
+                <div class="profile-header">
+                    <div>
+                        <div class="welcome-text">Logged in as</div>
+                        <div class="username-highlight" id="currentUser">User</div>
+                        <a id="publicLink" href="#" target="_blank" class="public-link-btn">View My Page ↗</a>
+                    </div>
+                    <button onclick="logout()" class="logout-btn">Sign Out</button>
+                </div>
+
+                <form onsubmit="handleConfig(event)">
+                    <div class="form-group">
+                        <label>MongoDB URI</label>
+                        <input type="password" id="mongoUri" placeholder="mongodb+srv://..." required>
+                        <div class="helper-text">Connection string to your MongoDB cluster.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Bot Username (no @)</label>
+                        <input type="text" id="botUsername" placeholder="MyAutoFilterBot" required>
+                        <div class="helper-text">Telegram bot username for file links.</div>
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <div class="form-group" style="flex:1">
+                            <label>DB Name</label>
+                            <input type="text" id="dbName" placeholder="TelegramFiles">
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Collection</label>
+                            <input type="text" id="collectionName" placeholder="TelegramFiles">
+                        </div>
+                    </div>
+                    <div class="helper-text" style="margin-top:-15px; margin-bottom:15px; text-align:center;">Optional:
+                        Override defaults if your URI is generic.</div>
+
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </form>
+            </div>
+
+            <div id="message" class="alert hidden"></div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <script>
+        let isLogin = true;
+
+        function switchTab(mode) {
+            isLogin = mode === 'login';
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.innerText.toLowerCase() === mode));
+            document.getElementById('authBtn').innerText = isLogin ? 'Login' : 'Register';
+        }
+
+        function showMessage(msg, type) {
+            const el = document.getElementById('message');
+            el.textContent = msg;
+            el.className = `alert alert-${type}`;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        }
+
+        async function checkSession() {
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('authSection').style.display = 'none';
+
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    showConfig(data);
+                } else {
+                    // Show auth section
+                    document.getElementById('authSection').style.display = 'block';
+                }
+            } catch (e) {
+                document.getElementById('authSection').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function showConfig(user) {
+            document.getElementById('authSection').style.display = 'none'; // Ensure hidden
+            document.getElementById('authSection').classList.add('hidden'); // Double check class
+            document.getElementById('configSection').classList.remove('hidden');
+            document.getElementById('currentUser').textContent = user.username;
+
+            const link = `${window.location.origin}/${user.username}`;
+            const linkEl = document.getElementById('publicLink');
+            linkEl.href = link;
+
+            document.getElementById('mongoUri').value = user.mongo_uri || '';
+            document.getElementById('botUsername').value = user.bot_username || '';
+            document.getElementById('dbName').value = user.db_name || '';
+            document.getElementById('collectionName').value = user.collection_name || '';
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const form = e.target;
+            const username = form.username.value;
+            const password = form.password.value;
+            const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (isLogin) {
+                        checkSession();
+                    } else {
+                        showMessage('Registered successfully! Please login.', 'success');
+                        switchTab('login');
+                    }
+                } else {
+                    showMessage(data.error || 'Action failed', 'error');
+                }
+            } catch (e) {
+                showMessage('Network error', 'error');
+            }
+        }
+
+        async function handleConfig(e) {
+            e.preventDefault();
+            const mongo_uri = document.getElementById('mongoUri').value;
+            const bot_username = document.getElementById('botUsername').value;
+            const db_name = document.getElementById('dbName').value;
+            const collection_name = document.getElementById('collectionName').value;
+
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mongo_uri, bot_username, db_name, collection_name })
+                });
+                if (res.ok) {
+                    showMessage('Configuration saved successfully!', 'success');
+                } else {
+                    const data = await res.json();
+                    showMessage(data.error || 'Save failed', 'error');
+                }
+            } catch (e) {
+                showMessage('Network error', 'error');
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.reload();
+        }
+
+        checkSession();
+    </script>
+</body>
+
+</html>
